@@ -20,29 +20,13 @@ class CPU:
             'HLT': 0b00000001
         }
 
-    def load(self):
+    def load(self, program=[]):
         """Load a program into memory."""
+        if len(program) == 0:
+            return
 
         address = 0
 
-        # For now, we've just hardcoded a program:
-
-        # Similar to memory array
-        program = [
-            # From print8.ls8
-
-            0b10000010,  # LDI R0,8 => LDI register immediate,
-            0b00000000,
-            0b00001000,
-            0b01000111,  # PRN R0 => register pseudo-instruction
-            0b00000000,
-            0b00000001,  # HLT => Halt the CPU (and exit the emulator).
-            0b10000010,  # LDI R0,8 => LDI register immediate,
-            0b00000010,
-            0b00001010,
-
-
-        ]
         while True:
             instrunction = program[address]
 
@@ -50,7 +34,6 @@ class CPU:
                 reg_index = int(program[address + 1])
                 self.ram[reg_index] = int(program[address + 2])
                 address += 3
-
             else:
                 address += 1
 
@@ -100,26 +83,39 @@ class CPU:
             Run the CPU.
 
         """
-        with open("/Users/lesley/code/Python/Projects/Computer-Architecture/ls8/examples/print8.ls8") as f:
-            program_inst = f.read()
-        program_inst = program_inst.split()
+        file_name = sys.argv[1]
 
-        program_inst = [inst for inst in program_inst if len(
-            inst) == 8 and inst[0] == "1" or inst[0] == "0"]
+        program_instruction = []
+        with open(f"/Users/lesley/code/Python/Projects/Computer-Architecture/ls8/examples/{file_name}") as f:
+            for line in f:
+                line = line.split("#")
+                line = line[0]
+                line = line.strip()
+
+                if line == "":
+                    continue
+                else:
+                    program_instruction.append(line)
+
+        self.load(program_instruction)  # Loads the Ram
 
         while self.is_on:
-            instruction = int(program_inst[self.pc], 2)
+            instruction = int(program_instruction[self.pc], 2)
 
             if instruction == self.instructions["LDI"]:
 
-                self.ram_write(int(program_inst[self.pc + 2], 2),
-                               int(program_inst[self.pc + 1], 2))
+                self.ram_write(int(program_instruction[self.pc + 2], 2),
+                               int(program_instruction[self.pc + 1], 2))
                 self.pc += 3
             elif instruction == self.instructions["PRN"]:
 
-                print(self.ram_read(int(program_inst[self.pc + 1], 2)))
+                print(self.ram_read(int(program_instruction[self.pc + 1], 2)))
                 self.pc += 2
 
             elif instruction == self.instructions["HLT"]:
                 self.is_on = False
                 self.pc += 1
+            else:
+                self.pc += 1
+                if self.pc == len(program_instruction):
+                    self.is_on = False
