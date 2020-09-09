@@ -17,7 +17,13 @@ class CPU:
             "LDI": 0b10000010,  # Set the value of a register to an integer.
             # Print numeric value stored in the given register.
             "PRN": 0b01000111,
-            'HLT': 0b00000001
+            'HLT': 0b00000001,
+
+            # MUL R0,R1 Multiply the values in two registers together and store the result in registerA.
+            "MUL": 0b10100010
+
+
+
         }
 
     def load(self, program=[]):
@@ -111,6 +117,17 @@ class CPU:
 
                 print(self.ram_read(int(program_instruction[self.pc + 1], 2)))
                 self.pc += 2
+            elif instruction == self.instructions["MUL"]:
+                # convert R1 and R1 to Interger Numbers
+                R1 = int(program_instruction[self.pc + 1], 2)
+                R2 = int(program_instruction[self.pc + 2], 2)
+
+                product = R1 * R2
+
+                self.ram_write(product, int(
+                    program_instruction[self.pc + 1], 2))
+
+                self.pc += 3
 
             elif instruction == self.instructions["HLT"]:
                 self.is_on = False
