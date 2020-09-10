@@ -11,7 +11,7 @@ class CPU:
         self.register = [None] * 8
         self.ram = [None] * 256
         self.pc = 0  # Program Counter, address of the currently executing instruction
-        self.stack_pointer = 0
+        self.reg_counter = 0
         self.is_on = True
         self.instructions = {
             "LDI": 0b10000010,  # Set the value of a register to an integer.
@@ -26,25 +26,26 @@ class CPU:
 
         }
 
-    def load(self, program=[]):
+    def load(self):
         """Load a program into memory."""
-        if len(program) == 0:
-            return
 
+        file_name = sys.argv
+        if len(file_name) == 1:
+            print("Provide a file name ro read instructions from")
+            sys.exit(1)
         address = 0
+        with open(f"/Users/lesley/code/Python/Projects/Computer-Architecture/ls8/examples/{file_name[1]}") as f:
+            for line in f:
+                line = line.split("#")
+                line = line[0]
+                line = line.strip()
 
-        while True:
-            instrunction = program[address]
-
-            if instrunction == self.instructions["LDI"]:
-                reg_index = int(program[address + 1])
-                self.ram[reg_index] = int(program[address + 2])
-                address += 3
-            else:
-                address += 1
-
-            if address == len(program):
-                break
+                if line == "":
+                    continue
+                else:
+                    num = int(line, 2)
+                    self.ram[address] = num
+                    address += 1
 
     def ram_read(self, address):
         return self.ram[address]
@@ -85,54 +86,45 @@ class CPU:
             print(" %02X" % self.reg[i], end='')
 
     def run(self):
+        self.pc = 0
         """
             Run the CPU.
 
         """
-        file_name = sys.argv[1]
-
-        program_instruction = []
-        with open(f"/Users/lesley/code/Python/Projects/Computer-Architecture/ls8/examples/{file_name}") as f:
-            for line in f:
-                line = line.split("#")
-                line = line[0]
-                line = line.strip()
-
-                if line == "":
-                    continue
-                else:
-                    program_instruction.append(line)
-
-        self.load(program_instruction)  # Loads the Ram
-
         while self.is_on:
-            instruction = int(program_instruction[self.pc], 2)
+            instruction = self.ram[self.pc]
 
             if instruction == self.instructions["LDI"]:
 
-                self.ram_write(int(program_instruction[self.pc + 2], 2),
-                               int(program_instruction[self.pc + 1], 2))
+                num = self.ram[self.pc + 2]
+                reg_loc = self.ram[self.pc + 1]
+
+                self.register[reg_loc] = num
+
                 self.pc += 3
+
             elif instruction == self.instructions["PRN"]:
 
-                print(self.ram_read(int(program_instruction[self.pc + 1], 2)))
+                print(self.register[self.ram[self.pc + 1]])
+
                 self.pc += 2
+
             elif instruction == self.instructions["MUL"]:
                 # convert R1 and R1 to Interger Numbers
-                R1 = int(program_instruction[self.pc + 1], 2)
-                R2 = int(program_instruction[self.pc + 2], 2)
+                R1 = self.ram[self.pc + 1]
+                R2 = self.ram[self.pc + 2]
 
-                product = R1 * R2
-
-                self.ram_write(product, int(
-                    program_instruction[self.pc + 1], 2))
-
+                product = self.register[R1] * self.register[R2]
+                self.register[R1] = product
                 self.pc += 3
 
             elif instruction == self.instructions["HLT"]:
                 self.is_on = False
                 self.pc += 1
+            elif instruction not in self.instructions:
+                print(f"Unknown instruction {instruction}")
+                sys.exit(1)
             else:
                 self.pc += 1
-                if self.pc == len(program_instruction):
+                if self.pc == len(self.ram):
                     self.is_on = False
