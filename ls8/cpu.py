@@ -8,10 +8,12 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.register = [None] * 8
+        self.register = [0] * 8
         self.ram = [None] * 256
         self.pc = 0  # Program Counter, address of the currently executing instruction
-        self.reg_counter = 0
+
+        self.memory_loc = 0
+        self.SP = 7
         self.is_on = True
         self.instructions = {
             "LDI": 0b10000010,  # Set the value of a register to an integer.
@@ -20,8 +22,18 @@ class CPU:
             'HLT': 0b00000001,
 
             # MUL R0,R1 Multiply the values in two registers together and store the result in registerA.
-            "MUL": 0b10100010
+            "MUL": 0b10100010,
 
+            "PUSH": 0b01000101,
+
+            # PUSH register
+
+            # Push the value in the given register on the stack.
+
+            # Decrement the SP.
+            # Copy the value in the given register to the address pointed to by SP.
+
+            "POP": 0b01000110
 
 
         }
@@ -86,6 +98,7 @@ class CPU:
             print(" %02X" % self.reg[i], end='')
 
     def run(self):
+        self.register[self.SP] = 244
         self.pc = 0
         """
             Run the CPU.
@@ -121,6 +134,29 @@ class CPU:
             elif instruction == self.instructions["HLT"]:
                 self.is_on = False
                 self.pc += 1
+
+            elif instruction == self.instructions["PUSH"]:
+                self.register[self.SP] -= 1
+
+                reg_index = self.ram[self.pc + 1]
+
+                reg_val = self.register[reg_index]
+
+                self.ram[self.register[self.SP]] = reg_val
+
+                self.pc += 2
+
+            elif instruction == self.instructions["POP"]:
+
+                given_reg = self.ram[self.pc + 1]
+                # Write the value in memory at the top of stack to the given register
+                value_from_ram = self.ram[self.register[self.SP]]
+
+                self.register[given_reg] = value_from_ram
+                # increment the stack pointer
+                self.register[self.SP] += 1
+                self.pc += 2
+
             elif instruction not in self.instructions:
                 print(f"Unknown instruction {instruction}")
                 sys.exit(1)
